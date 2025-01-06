@@ -1,0 +1,355 @@
+.card {
+    width: 200px;
+    height: 300px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s, opacity 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+}
+.card:hover:not(.selected):not(.flipped) {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    transform: translateY(-5px);
+}
+.card.flipped {
+    transform: rotateY(180deg);
+}
+.card.selected {
+    opacity: 0.5;
+    cursor: default;
+}
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    background: white;
+    border: 2px solid #000;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s;
+}
+.card-back {
+    transform: rotateY(180deg);
+}
+.card-header {
+    height: 40px;
+    border-bottom: 2px solid #000;
+    border-radius: 8px 8px 0 0;
+}
+.card-number {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    color: white;
+    border: 2px solid #000;
+    padding: 2px 8px;
+    font-weight: bold;
+}
+.card-content {
+    padding: 20px;
+    text-align: center;
+}
+.card-content h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+.pixel-art {
+    width: 120px;
+    height: 120px;
+    margin: 20px auto;
+}
+.pixel-art rect {
+    shape-rendering: crispEdges;
+}
+.effects {
+    margin: 15px 0;
+    font-size: 14px;
+}
+.effects p {
+    margin: 5px 0;
+}
+.positive {
+    color: #2ecc71;
+    font-weight: bold;
+}
+.negative {
+    color: #e84d4d;
+    font-weight: bold;
+}
+.select-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+.select-btn::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    transform: translateX(-100%);
+    animation: shine 3s infinite;
+}
+@keyframes shine {
+    0% { transform: translateX(-100%) }
+    20% { transform: translateX(100%) }
+    100% { transform: translateX(100%) }
+}
+.select-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+.select-btn:active {
+    transform: scale(0.98);
+}
+.new-turn-btn {
+    background: #f39c12;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 20px;
+    transition: all 0.3s;
+    animation: pulse 2s infinite;
+}
+.new-turn-btn:disabled {
+    animation: none;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+.new-turn-btn:hover {
+    background: #e67e22;
+}
+.new-turn-btn:active {
+    transform: scale(0.98);
+}
+.card-icon {
+    width: 80px;
+    height: 80px;
+    margin: 10px auto;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.card:hover .card-icon {
+    transform: scale(1.1);
+}
+.customer-details {
+    margin: 10px 0;
+    padding: 8px;
+    background: rgba(74, 144, 226, 0.1);
+    border-radius: 6px;
+}
+
+.customer-type, .customer-income {
+    margin: 4px 0;
+    font-size: 0.9rem;
+    color: #4a5568;
+}
+
+.customer-income {
+    font-weight: 600;
+    color: #2d3748;
+}
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    margin-bottom: 16px;
+    color: #2d3748;
+}
+
+.demands-list {
+    margin: 15px 0;
+    padding: 12px;
+    background: #f7fafc;
+    border-radius: 8px;
+}
+
+.demand-item {
+    margin: 8px 0;
+    color: #4a5568;
+    font-size: 1rem;
+}
+
+.impact-info {
+    margin: 16px 0;
+    padding: 12px;
+    background: #edf2f7;
+    border-radius: 8px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.accept-btn, .reject-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.accept-btn {
+    background: #4CAF50;
+    color: white;
+}
+
+.accept-btn:hover {
+    background: #43a047;
+}
+
+.reject-btn {
+    background: #f44336;
+    color: white;
+}
+
+.reject-btn:hover {
+    background: #e53935;
+}
+
+.close-btn {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    border: none;
+    background: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #718096;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.close-btn:hover {
+    background: #f7fafc;
+    color: #4a5568;
+}
+
+.examine-btn {
+    background: #4A90E2;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.examine-btn:hover {
+    background: #357ABD;
+}
+.modal-actions button {
+    cursor: pointer;
+    position: relative;
+    z-index: 1001;  /* Modal overlay'in üstünde olması için */
+}
+
+.modal-content {
+    pointer-events: auto;  /* İçeriğin tıklanabilir olması için */
+}
+
+.modal-overlay {
+    pointer-events: auto;  /* Overlay'in tıklanabilir olması için */
+}
+.card {
+    /* Mevcut stiller */
+    border: 2px solid;
+    border-image: linear-gradient(45deg,
+    rgba(255,255,255,0.8),
+    rgba(255,255,255,0.3)
+    ) 1;
+    background-clip: padding-box;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.card[data-type='customer'] {
+    border-image: linear-gradient(45deg, #4A90E2, #89CFF0) 1;
+}
+
+.card[data-type='crisis'] {
+    border-image: linear-gradient(45deg, #e84d4d, #ff8f8f) 1;
+}
+
+.card[data-type='resource'] {
+    border-image: linear-gradient(45deg, #2ecc71, #98FB98) 1;
+}
+/* Sadece bu kısmı ekleyelim - diğer tüm kodlar aynı kalacak */
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s;
+    border: none; /* Border'ı kaldırıyoruz */
+}
+
+/* Her kart tipi için özel kenarlık */
+.card-face[data-type='customer'] {
+    background: linear-gradient(white, white) padding-box,
+    linear-gradient(45deg, #4A90E2, #89CFF0) border-box;
+    border: 2px solid transparent;
+}
+
+.card-face[data-type='crisis'] {
+    background: linear-gradient(white, white) padding-box,
+    linear-gradient(45deg, #e84d4d, #ff8f8f) border-box;
+    border: 2px solid transparent;
+}
+
+.card-face[data-type='resource'] {
+    background: linear-gradient(white, white) padding-box,
+    linear-gradient(45deg, #2ecc71, #98FB98) border-box;
+    border: 2px solid transparent;
+}

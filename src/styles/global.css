@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --card-width: 16rem;
+  --card-height: 24rem;
+}
+
+body {
+  background-color: #f3f4f6;
+  color: #1a1a1a;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.effect-popup {
+  position: fixed;
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: popup 0.3s ease-out forwards;
+}
+
+@keyframes popup {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.money-change {
+  color: #059669;
+}
+
+.money-change.negative {
+  color: #dc2626;
+}
+
+.satisfaction-change {
+  color: #4F46E5;
+}
