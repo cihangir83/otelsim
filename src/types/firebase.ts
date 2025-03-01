@@ -42,4 +42,9 @@ export interface UserDecision {
         after: MetricValues;
     };
     createdAt: Timestamp;
+    // Yeni alanlar
+    day?: number;
+    scenarioText?: string;
+    selectedOptionText?: string;
+    gameId?: string;
 }
