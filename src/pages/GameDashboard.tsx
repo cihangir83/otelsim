@@ -81,12 +81,11 @@ const GameDashboard = () => {
 
     const logout = () => {
         localStorage.removeItem('userData');  // Sadece kullanıcı bilgisini temizle
+        localStorage.removeItem('currentGameId'); // Oyun ID'sini temizle
         navigate('/game-setup');
     };
 
     // Kullanıcı verilerini yükle
-
-
     const loadUserData = async () => {
         if (!auth.currentUser) {
             navigate('/');
@@ -106,7 +105,6 @@ const GameDashboard = () => {
             console.error('Kullanıcı verisi yükleme hatası:', error);
         }
     };
-
 
     const loadScenario = async () => {
         if (!gameSetup || !gameSetup.role) {
@@ -163,7 +161,6 @@ const GameDashboard = () => {
         }
     };
 
-
     const loadHotelMetrics = async () => {
         if (!gameSetup?.hotelType) {
             console.warn("⚠️ Otel tipi tanımlanmamış.");
@@ -187,15 +184,20 @@ const GameDashboard = () => {
         }
     };
 
-
-
     // Kullanıcı kararlarını yükle
     const loadUserDecisions = async () => {
         if (!auth.currentUser) return;
 
         try {
+            const currentGameId = localStorage.getItem('currentGameId');
+            if (!currentGameId) return;
+
             const decisionsRef = collection(db, 'userDecisions');
-            const q = query(decisionsRef, where('userId', '==', auth.currentUser.uid));
+            const q = query(
+                decisionsRef,
+                where('userId', '==', auth.currentUser.uid),
+                where('gameId', '==', currentGameId)
+            );
             const querySnapshot = await getDocs(q);
 
             const decisions = querySnapshot.docs.map(doc => ({
@@ -204,7 +206,11 @@ const GameDashboard = () => {
                 questionId: doc.data().questionId,
                 selectedOption: doc.data().selectedOption,
                 metrics: doc.data().metrics,
-                createdAt: doc.data().createdAt
+                createdAt: doc.data().createdAt,
+                day: doc.data().day || null,
+                scenarioText: doc.data().scenarioText || null,
+                selectedOptionText: doc.data().selectedOptionText || null,
+                gameId: doc.data().gameId || null
             })) as UserDecision[];
 
             setUserDecisions(decisions);
@@ -214,7 +220,6 @@ const GameDashboard = () => {
     };
 
     // Senaryo kararını işle
-// Senaryo kararını işle
     const handleDecision = async (questionId: string, optionIndex: number) => {
         if (!userData || !auth.currentUser || !metrics) return;
 
@@ -241,6 +246,9 @@ const GameDashboard = () => {
             // 3) Firestore'daki kullanıcı metriklerini kaydedin
             await updateUserMetrics(auth.currentUser.uid, newMetrics);
 
+            // Mevcut gameId'yi al
+            const currentGameId = localStorage.getItem('currentGameId');
+
             // 4) Kararı kaydet
             await saveUserDecision({
                 userId: auth.currentUser.uid,
@@ -249,7 +257,11 @@ const GameDashboard = () => {
                 metrics: {
                     before: oldMetrics,
                     after: newMetrics
-                }
+                },
+                day: userData.currentDay, // Mevcut gün
+                scenarioText: scenario.text, // Senaryo metni
+                selectedOptionText: selectedOption.text, // Seçilen seçeneğin metni
+                gameId: currentGameId || undefined // Oyun ID'si
             });
 
             // 5) Achievements kontrol
@@ -288,7 +300,13 @@ const GameDashboard = () => {
                     // ADDED: 10 tura ulaşıldı mı? Oyun Bitti ekranına yönlendir.
                     if (updatedCompletedScenarios >= 10) {
                         console.log("✅ 10 tur tamamlandı, Oyun bitti! /game-over sayfasına yönlendiriliyor...");
-                        navigate("/game-over"); // burada durdurmak için return
+                        // GameOver sayfasına geçerken mevcut gameId'yi de gönder
+                        const currentGameId = localStorage.getItem('currentGameId');
+                        if (currentGameId) {
+                            navigate(`/game-over?gameId=${currentGameId}`);
+                        } else {
+                            navigate("/game-over");
+                        }
                         return { ...prev, completedScenarios: updatedCompletedScenarios };
                     }
 
@@ -304,7 +322,6 @@ const GameDashboard = () => {
                 await loadScenario();
             }
 
-
             // 10) Karar geçmişini tekrar çek
             await loadUserDecisions();
         } catch (error) {
@@ -314,7 +331,6 @@ const GameDashboard = () => {
             setIsLoading(false);
         }
     };
-
 
     // Başarım bilgilerini getir
     const getAchievementInfo = (achievementId: string) => {
@@ -348,17 +364,22 @@ const GameDashboard = () => {
         };
     };
 
-    console.log("💾 localStorage'dan çekilen Game Setup:", localStorage.getItem('gameSetup'));
-    console.log("💾 localStorage'dan çekilen Game Setup:", localStorage.getItem('gameSetup'));
-    const setupData = localStorage.getItem('gameSetup');
-    console.log("🔍 localStorage'tan gelen Game Setup:", setupData);
-
-    // Ana başlatma useEffect'i
     useEffect(() => {
         const initDashboard = async () => {
             setIsLoading(true);
             try {
-                // 1️⃣ localStorage'dan veriyi al
+                // 1️⃣ Oyun ID'si oluştur veya mevcut olanı al
+                let currentGameId = localStorage.getItem('currentGameId');
+
+                if (!currentGameId) {
+                    currentGameId = 'game_' + Date.now();
+                    localStorage.setItem('currentGameId', currentGameId);
+                    console.log("🎮 Yeni Oyun ID'si oluşturuldu:", currentGameId);
+                } else {
+                    console.log("🎮 Mevcut Oyun ID'si kullanılıyor:", currentGameId);
+                }
+
+                // 2️⃣ localStorage'dan veriyi al
                 const setupData = localStorage.getItem('gameSetup');
 
                 if (!setupData) {
@@ -367,7 +388,7 @@ const GameDashboard = () => {
                     return;
                 }
 
-                // 2️⃣ JSON'a çevir ve kontrol et
+                // 3️⃣ JSON'a çevir ve kontrol et
                 const setup = JSON.parse(setupData);
                 console.log("✅ localStorage'dan Yüklenen Game Setup:", setup);
 
@@ -377,10 +398,10 @@ const GameDashboard = () => {
                     return;
                 }
 
-                // 3️⃣ `gameSetup` state'ini güncelle
+                // 4️⃣ `gameSetup` state'ini güncelle
                 setGameSetup(setup);
 
-                // 4️⃣ Önce kullanıcı verisini yükle
+                // 5️⃣ Önce kullanıcı verisini yükle
                 await loadUserData();
 
                 // **ÖNEMLİ:** State'in güncellenmesini beklemek için kısa bir gecikme ekleyelim.
@@ -399,11 +420,15 @@ const GameDashboard = () => {
         };
 
         void initDashboard();
-    }, []);
+    }, [navigate]);
 
-
-    useEffect(() => { if (gameSetup && gameSetup.role) { (async () => { await loadScenario(); })(); } }, [gameSetup]);
-
+    useEffect(() => {
+        if (gameSetup && gameSetup.role) {
+            (async () => {
+                await loadScenario();
+            })();
+        }
+    }, [gameSetup]);
 
     useEffect(() => {
         if (!userData || !userData.lastLoginDate) return;
@@ -430,7 +455,6 @@ const GameDashboard = () => {
             console.error('Tarih kontrolü hatası:', error);
         }
     }, [userData]);
-
 
     if (isLoading) {
         return (
@@ -654,7 +678,6 @@ const GameDashboard = () => {
                     </div>
 
                     {/* Aktif Senaryo Kartı */}
-                    {/* Aktif Senaryo Kartı */}
                     <div style={{
                         background: 'white',
                         padding: '20px',
@@ -811,7 +834,7 @@ const GameDashboard = () => {
                                         Senaryo #{decision.questionId}
                                     </strong>
                                     <span style={{ color: '#666', fontSize: '0.9em' }}>
-                                        {(decision.createdAt as Timestamp).toDate().toLocaleDateString()}
+                                        Gün {decision.day || '?'} / {(decision.createdAt as Timestamp).toDate().toLocaleDateString()}
                                     </span>
                                 </div>
                                 <p style={{ margin: '5px 0', color: '#2c3e50' }}>
