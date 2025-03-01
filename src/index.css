@@ -1,0 +1,559 @@
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f2f5;
+}
+
+.login-box {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-title {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.input-field {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.login-button {
+    width: 100%;
+    padding: 0.5rem;
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+/* Mevcut stiller kalacak, bunları en alta ekleyelim */
+
+.dashboard-container {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #1a2035;
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.logo {
+    font-size: 1.2rem;
+    font-weight: bold;
+    padding: 20px 0;
+    border-bottom: 1px solid #2d3446;
+}
+
+.sidebar nav {
+    margin-top: 20px;
+    flex-grow: 1;
+}
+
+.sidebar button {
+    width: 100%;
+    padding: 12px;
+    margin: 5px 0;
+    background: none;
+    border: none;
+    color: white;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sidebar button.active {
+    background-color: #2d3446;
+    border-radius: 4px;
+}
+
+.logout-button {
+    margin-top: auto;
+    background-color: #dc3545 !important;
+    text-align: center !important;
+    border-radius: 4px;
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 20px;
+    background-color: #f4f6f9;
+}
+
+.add-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+/* ... Önceki stiller ... */
+
+.question-form {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.form-group textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.options-section {
+    margin-top: 20px;
+}
+
+.option-group {
+    background: #f8f9fa;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+.effects-group {
+    margin-top: 10px;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+}
+
+.effect-input {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+}
+
+.effect-input label {
+    width: 150px;
+}
+
+.effect-input input[type="range"] {
+    flex: 1;
+    margin: 0 10px;
+}
+
+.add-option-button {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.submit-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+/* ... önceki stiller ... */
+
+.questions-list {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.question-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.difficulty {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.difficulty-1 { background: #28a745; color: white; }
+.difficulty-2 { background: #ffc107; color: black; }
+.difficulty-3 { background: #dc3545; color: white; }
+
+.department {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.question-text {
+    font-size: 1rem;
+    margin-bottom: 15px;
+}
+
+.options-list {
+    margin-top: 15px;
+}
+
+.option-item {
+    margin: 10px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.effects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.effect-tag {
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    background: #e9ecef;
+    border-radius: 3px;
+}
+
+.question-actions {
+    margin-top: 15px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.delete-button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.no-questions {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    grid-column: 1 / -1;
+}
+/* Metrics Manager Styles */
+.metrics-manager {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.metrics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.hotel-type-select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.metrics-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.metric-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.metric-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.metric-input-group input[type="range"] {
+    flex: 1;
+}
+
+.metric-input-group input[type="number"] {
+    width: 80px;
+    padding: 4px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.save-metrics-button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.save-metrics-button:hover {
+    background-color: #218838;
+}
+/* ÖRNEK: HotelList veya ek tablo stilleri vs. */
+.hotel-list-container {
+    margin-top: 20px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.hotel-list-container table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.hotel-list-container th,
+.hotel-list-container td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+.hotel-list-container thead {
+    background-color: #f8f9fa;
+}
+
+.hotel-list-container tbody tr:hover {
+    background-color: #f4f4f4;
+}
+
+.hotel-list-container button {
+    padding: 6px 12px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.hotel-list-container button:hover {
+    background-color: #c82333;
+}
+.game-login {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    padding: 20px;
+}
+
+.game-login-content {
+    display: flex;
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    max-width: 1000px;
+    width: 100%;
+}
+
+.game-info {
+    flex: 1;
+    padding: 40px;
+    background: linear-gradient(45deg, #2193b0, #6dd5ed);
+    color: white;
+}
+
+.game-info h1 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+.feature-list {
+    margin-top: 40px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.feature-icon {
+    font-size: 2em;
+    margin-right: 15px;
+}
+
+.game-login-form {
+    flex: 1;
+    padding: 40px;
+    background: white;
+}
+
+.game-login-form h2 {
+    color: #333;
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #666;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.game-login-form button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background: #2193b0;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.game-login-form button[type="submit"]:hover {
+    background: #1a7a8f;
+}
+
+.toggle-form {
+    margin-top: 20px;
+    background: none;
+    border: none;
+    color: #2193b0;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.error-message {
+    color: #dc3545;
+    margin: 10px 0;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .game-login-content {
+        flex-direction: column;
+    }
+
+    .game-info,
+    .game-login-form {
+        padding: 20px;
+    }
+}
+/* Game Setup ve Dashboard ortak stiller */
+.game-setup, .game-dashboard {
+    min-height: 100vh;
+    padding: 40px;
+    background-color: #f5f7fa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.game-setup h1, .game-dashboard h1 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 2.5em;
+}
+
+.game-setup p, .game-dashboard p {
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 1.2em;
+}
+
+.game-setup button, .game-dashboard button {
+    padding: 12px 24px;
+    background: #2193b0;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: background 0.3s;
+}
+
+.game-setup button:hover, .game-dashboard button:hover {
+    background: #1a7a8f;
+}
