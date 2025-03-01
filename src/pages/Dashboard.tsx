@@ -20,6 +20,10 @@ const Dashboard = () => {
         }
     };
 
+    const handleBulkQuestionUpload = () => {
+        window.location.href = 'https://flask-l8hm.onrender.com/';
+    };
+
     return (
         <div className="dashboard-container">
             {/* Sol Menü */}
@@ -43,6 +47,12 @@ const Dashboard = () => {
                         }}
                     >
                         Metrik Yönetimi
+                    </button>
+                    <button
+                        className="bulk-upload-button"
+                        onClick={handleBulkQuestionUpload}
+                    >
+                        Toplu Soru Yükle
                     </button>
                 </nav>
                 <button className="logout-button" onClick={handleLogout}>
