@@ -69,11 +69,29 @@ export const updateUserMetrics = async (
     }
 };
 
-// Karar kaydetme işlemi
-export const saveUserDecision = async (decision: Omit<UserDecision, 'createdAt' | 'id'>) => {
+// Karar kaydetme işlemi - Yeni alanları (day, scenarioText, selectedOptionText, gameId) ekledim
+// Karar kaydetme işlemi - güncellenmiş versiyon
+// Mevcut tip yapısını bozmadan yeni alanları opsiyonel olarak kabul eder
+// Bu fonksiyon firebase.ts içinde yer aldığı gibi güncellenmeli
+
+// Karar kaydetme işlemi - Yeni alanları da kabul edecek şekilde
+export const saveUserDecision = async (decision: Omit<UserDecision, 'createdAt' | 'id'> & {
+    day?: number;
+    scenarioText?: string;
+    selectedOptionText?: string;
+    gameId?: string;
+}) => {
     try {
         await addDoc(collection(db, 'userDecisions'), {
-            ...decision,
+            userId: decision.userId,
+            questionId: decision.questionId,
+            selectedOption: decision.selectedOption,
+            metrics: decision.metrics,
+            // Yeni alanlar - varsa ekle
+            ...(decision.day !== undefined ? { day: decision.day } : {}),
+            ...(decision.scenarioText ? { scenarioText: decision.scenarioText } : {}),
+            ...(decision.selectedOptionText ? { selectedOptionText: decision.selectedOptionText } : {}),
+            ...(decision.gameId ? { gameId: decision.gameId } : {}),
             createdAt: Timestamp.now()
         });
     } catch (error) {
@@ -82,7 +100,7 @@ export const saveUserDecision = async (decision: Omit<UserDecision, 'createdAt' 
     }
 };
 
-// ADDED: Kullanıcı kararlarını (userDecisions) Firestore'dan çekmek için fonksiyon
+// Kullanıcı kararlarını yükleme fonksiyonu
 export const loadUserDecisions = async (userId: string): Promise<UserDecision[]> => {
     try {
         const decisionsRef = collection(db, 'userDecisions');
@@ -90,20 +108,26 @@ export const loadUserDecisions = async (userId: string): Promise<UserDecision[]>
         const querySnapshot = await getDocs(q);
 
         // Her dokümanı UserDecision tipinde bir objeye dönüştürüyoruz
-        return querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            userId: doc.data().userId,
-            questionId: doc.data().questionId,
-            selectedOption: doc.data().selectedOption,
-            metrics: doc.data().metrics,
-            createdAt: doc.data().createdAt
-        })) as UserDecision[];
+        return querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                userId: data.userId,
+                questionId: data.questionId,
+                selectedOption: data.selectedOption,
+                metrics: data.metrics,
+                createdAt: data.createdAt,
+                day: data.day,
+                scenarioText: data.scenarioText,
+                selectedOptionText: data.selectedOptionText,
+                gameId: data.gameId
+            } as UserDecision;
+        });
     } catch (error) {
         console.error('Karar geçmişi yükleme hatası:', error);
         throw error;
     }
 };
-
 // Başlangıç metriklerini oluştur
 export const getInitialMetrics = (): MetricValues => ({
     revenue: 50,
