@@ -1,3 +1,5 @@
+// ../types/firebase.ts
+
 import { Timestamp } from 'firebase/firestore';
 
 export interface MetricValues {
@@ -9,7 +11,7 @@ export interface MetricValues {
 }
 
 export interface UserData {
-    lastLoginDate: Timestamp;
+    lastLoginDate: Timestamp; // Bu ve aşağıdaki timestamp biraz gereksiz görünüyor, biri yeterli olabilir
     email: string;
     name: string;
     currentRole: string;
@@ -18,7 +20,7 @@ export interface UserData {
     completedScenarios: number;
     metrics: MetricValues;
     achievements: string[];
-    lastLoginTimestamp: Timestamp;
+    lastLoginTimestamp: Timestamp; // Bu alan muhtemelen lastLoginDate ile aynı, gereksiz olabilir
     createdAt: Timestamp;
 }
 
@@ -36,7 +38,7 @@ export interface UserDecision {
     id: string;
     userId: string;
     questionId: string;
-    selectedOption: number;
+    selectedOption: number; // Index
     metrics: {
         before: MetricValues;
         after: MetricValues;
@@ -47,4 +49,7 @@ export interface UserDecision {
     scenarioText?: string;
     selectedOptionText?: string;
     gameId?: string;
+    // --- BU SATIRI EKLEYİN ---
+    baoScore?: number; // BAO skoru için isteğe bağlı sayı alanı
+    // --------------------------
 }

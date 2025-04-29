@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react'; // useCallback import edildi
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../firebase/config';
+// *** Doğru servis fonksiyonunu import ettiğinizden emin olun ***
 import { getUserData, loadUserDecisions } from '../services/firebase';
+// *** UserDecision tipinin baoScore içerdiğinden emin olun ***
+import { UserDecision, MetricValues, UserData } from '../types/firebase'; // Tipleri import et
 
 const GameOver: React.FC = () => {
     const navigate = useNavigate();
@@ -14,21 +17,25 @@ const GameOver: React.FC = () => {
     // State tanımlamaları
     const [reportText, setReportText] = useState<string>('Rapor hazırlanıyor...');
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null); // Hata state'i eklendi
+    // gameId state'ini URL'den alınan değerle başlat
     const [gameId] = useState<string | null>(gameIdFromUrl);
+    const [userData, setUserData] = useState<UserData | null>(null); // Kullanıcı verisi için state
+    const [userDecisions, setUserDecisions] = useState<UserDecision[]>([]); // Kararlar için state
 
-    // Yapay Zeka Analizi için yeni state'ler
+    // Yapay Zeka Analizi için state'ler
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
     const [showAiAnalysis, setShowAiAnalysis] = useState(false);
-    const [allDecisions, setAllDecisions] = useState<any[]>([]);
 
-    // Kararları günlere göre grupla
-    const groupDecisionsByDay = (decisions: any[]) => {
-        const grouped: { [key: string]: any[] } = {};
+    // Kararları günlere göre grupla (Tip güvenliği artırıldı)
+    const groupDecisionsByDay = (decisions: UserDecision[]) => {
+        const grouped: { [key: string]: UserDecision[] } = {}; // Anahtar string, değer UserDecision dizisi
 
         decisions.forEach(decision => {
+            // decision.day null veya undefined ise '?' kullan, değilse string'e çevir
             const day = decision.day !== undefined && decision.day !== null
-                ? decision.day.toString()
+                ? String(decision.day)
                 : '?';
 
             if (!grouped[day]) {
@@ -40,261 +47,236 @@ const GameOver: React.FC = () => {
         return grouped;
     };
 
-    // Detaylı rapor oluştur
-    const generateDetailedReport = (groupedDecisions: any, metrics: any) => {
+    // Detaylı rapor oluştur (Tip güvenliği artırıldı)
+    const generateDetailedReport = useCallback((groupedDecisions: { [key: string]: UserDecision[] }, metrics: MetricValues | undefined | null) => {
         let report = `
 === OYUN SONU RAPORU ===
 
 Son Metrikleriniz:
-- Gelir: ${metrics?.revenue || '?'}%
-- Müşteri Memnuniyeti: ${metrics?.customerSatisfaction || '?'}%
-- Personel Memnuniyeti: ${metrics?.staffSatisfaction || '?'}%
-- Doluluk Oranı: ${metrics?.occupancyRate || '?'}%
-- Sürdürülebilirlik: ${metrics?.sustainability || '?'}%
+- Gelir: ${metrics?.revenue ?? '?'}%
+- Müşteri Memnuniyeti: ${metrics?.customerSatisfaction ?? '?'}%
+- Personel Memnuniyeti: ${metrics?.staffSatisfaction ?? '?'}%
+- Doluluk Oranı: ${metrics?.occupancyRate ?? '?'}%
+- Sürdürülebilirlik: ${metrics?.sustainability ?? '?'}%
 
 -----------------------
 
-10 TUR BOYUNCA KARARLARINIZ:
+${Object.keys(groupedDecisions).length > 0 ? '10 TUR BOYUNCA KARARLARINIZ:' : 'Oyun boyunca hiç karar verilmedi.'}
 `;
 
-        // Her tur/gün için detaylı rapor
+        // Günleri sayısal olarak sırala, '?' olanları sona at
         Object.keys(groupedDecisions)
             .sort((a, b) => {
-                // "?" karakterini içerenleri sona at
-                if (a === '?') return 1;
-                if (b === '?') return -1;
-                return Number(a) - Number(b);
+                const numA = a === '?' ? Infinity : Number(a);
+                const numB = b === '?' ? Infinity : Number(b);
+                return numA - numB;
             })
             .forEach(day => {
                 const dayDecisions = groupedDecisions[day];
+                report += `\n=== GÜN ${day === '?' ? 'Bilinmeyen' : day} ===\n`;
 
-                report += `\n=== GÜN ${day} ===\n`;
-
-                dayDecisions.forEach((decision: any, index: number) => {
+                dayDecisions.forEach((decision: UserDecision, index: number) => {
                     report += `\nSenaryo ${index + 1}: `;
+                    report += decision.scenarioText ? `"${decision.scenarioText}"\n` : `(ID: ${decision.questionId})\n`;
+                    report += `Seçiminiz: `;
+                    report += decision.selectedOptionText ? `"${decision.selectedOptionText}"\n` : `(Opsiyon #${decision.selectedOption + 1})\n`;
 
-                    // Eğer scenarioText kaydedilmişse göster
-                    if (decision.scenarioText) {
-                        report += `"${decision.scenarioText}"\n`;
-                    } else {
-                        report += `(Senaryo #${decision.questionId})\n`;
-                    }
+                     // --- BAO Skoru ekle ---
+                     if (typeof decision.baoScore === 'number') {
+                        report += `Genel Etki Skoru (BAO): ${decision.baoScore.toFixed(1)}\n`;
+                     }
+                     // ----------------------
 
-                    // Eğer selectedOptionText kaydedilmişse göster
-                    if (decision.selectedOptionText) {
-                        report += `Seçiminiz: "${decision.selectedOptionText}"\n`;
-                    } else {
-                        report += `Seçilen Opsiyon: ${decision.selectedOption + 1}\n`;
-                    }
 
                     // Etki bilgilerini ekle
-                    if (decision.metrics && decision.metrics.before && decision.metrics.after) {
-                        report += 'Kararınızın Etkileri:\n';
-
+                    if (decision.metrics?.before && decision.metrics?.after) {
+                        report += 'Kararınızın Metrik Etkileri:\n';
                         const before = decision.metrics.before;
                         const after = decision.metrics.after;
 
-                        Object.keys(before).forEach(key => {
-                            const metricName = key === 'revenue' ? 'Gelir' :
-                                key === 'customerSatisfaction' ? 'Müşteri Memnuniyeti' :
-                                    key === 'staffSatisfaction' ? 'Personel Memnuniyeti' :
-                                        key === 'occupancyRate' ? 'Doluluk Oranı' :
-                                            key === 'sustainability' ? 'Sürdürülebilirlik' : key;
-
-                            const change = after[key] - before[key];
+                        (Object.keys(before) as Array<keyof MetricValues>).forEach(key => { // Tip güvenliği için
+                            const metricNameMap: { [key in keyof MetricValues]: string } = {
+                                revenue: 'Gelir', customerSatisfaction: 'Müşteri Mem.', staffSatisfaction: 'Personel Mem.', occupancyRate: 'Doluluk', sustainability: 'Sürdürülebilirlik'
+                            };
+                            const metricName = metricNameMap[key] || key;
+                            const change = (after[key] ?? 0) - (before[key] ?? 0); // Null check
                             const changeSymbol = change > 0 ? '↑' : change < 0 ? '↓' : '→';
-
-                            report += `  ${metricName}: ${before[key]}% → ${after[key]}% (${changeSymbol}${Math.abs(change)}%)\n`;
+                            report += `  ${metricName}: ${before[key] ?? '?'}% → ${after[key] ?? '?'}% (${changeSymbol}${Math.abs(change)}%)\n`;
                         });
+                    } else {
+                        report += 'Metrik etkisi bilgisi kaydedilmemiş.\n';
                     }
-
                     report += '--------------------------\n';
                 });
             });
 
         return report;
-    };
+    }, []); // useCallback bağımlılığı boş dizi, çünkü dış değişkenlere bağlı değil
 
-    // Yapay Zeka Analizi için özet veri oluştur
-    const generateAIAnalysisData = (decisions: any[]) => {
+
+    // Yapay Zeka Analizi için özet veri oluştur (Tip güvenliği artırıldı)
+    const generateAIAnalysisData = useCallback((decisions: UserDecision[]) => {
         let analysisData = `# Otel Yönetim Simülasyonu - Karar Analizi\n\n`;
-
-        // Kararları günlere göre gruplandır
         const groupedDecisions = groupDecisionsByDay(decisions);
 
-        // Her gün için kararları analiz et
         Object.keys(groupedDecisions)
-            .sort((a, b) => {
-                if (a === '?') return 1;
-                if (b === '?') return -1;
-                return Number(a) - Number(b);
+            .sort((a, b) => { // Sayısal sıralama
+                const numA = a === '?' ? Infinity : Number(a);
+                const numB = b === '?' ? Infinity : Number(b);
+                return numA - numB;
             })
             .forEach(day => {
                 const dayDecisions = groupedDecisions[day];
+                analysisData += `## GÜN ${day === '?' ? 'Bilinmeyen' : day}\n\n`;
 
-                analysisData += `## GÜN ${day}\n\n`;
-
-                dayDecisions.forEach((decision: any, index: number) => {
+                dayDecisions.forEach((decision: UserDecision, index: number) => {
                     analysisData += `### Senaryo ${index + 1}\n`;
-
-                    // Senaryo metni
-                    if (decision.scenarioText) {
-                        analysisData += `**Durum:** ${decision.scenarioText}\n\n`;
-                    }
-
-                    // Oyuncunun seçtiği seçenek
-                    if (decision.selectedOptionText) {
-                        analysisData += `**Oyuncunun Seçimi:** ${decision.selectedOptionText}\n\n`;
-                    }
-
+                    analysisData += `**Durum:** ${decision.scenarioText || '(Metin Yok)'}\n`;
+                    analysisData += `**Oyuncunun Seçimi:** ${decision.selectedOptionText || `(Opsiyon #${decision.selectedOption + 1})`}\n`;
+                     // --- BAO Skoru ekle ---
+                     if (typeof decision.baoScore === 'number') {
+                         analysisData += `**Hesaplanan Etki Skoru:** ${decision.baoScore.toFixed(1)}\n`;
+                     }
+                     // ----------------------
                     analysisData += `---\n\n`;
                 });
             });
-
         return analysisData;
-    };
+    }, []); // useCallback bağımlılığı boş dizi
 
     // Yapay Zeka Analizi istek gönderme fonksiyonu
-    // analyzeGameWithAI fonksiyonunu Mistral API ile güncelleme
     const analyzeGameWithAI = async () => {
-        if (allDecisions.length === 0) {
-            alert('Analiz için veri bulunamadı!');
+        if (userDecisions.length === 0) { // userDecisions state'ini kullan
+            alert('Analiz için karar verisi bulunamadı!');
             return;
         }
 
         setIsAnalyzing(true);
+        setAiAnalysisResult(null); // Önceki sonucu temizle
+        setShowAiAnalysis(false); // Modal'ı gizle
+
         try {
-            // Analiz için veri hazırla
-            const analysisData = generateAIAnalysisData(allDecisions);
-
-            // Mistral prompt hazırla
+            const analysisData = generateAIAnalysisData(userDecisions); // userDecisions state'ini kullan
             const prompt = `
-Sen bir otel yönetim uzmanısın. Aşağıda bir otel yönetim simülasyonu oyununun 10 turluk karar özeti verilmiştir.
-Bu kararlara dayanarak oyuncunun otel yönetim performansını analiz et.
+Sen bir otel yönetim uzmanısın. Aşağıda bir otel yönetim simülasyonu oyununun karar özeti verilmiştir. Her kararın bir "Hesaplanan Etki Skoru (BAO)" bulunmaktadır. Bu skor, kararın otel metrikleri üzerindeki ağırlıklı ortalama etkisini gösterir. Yüksek pozitif skorlar olumlu, yüksek negatif skorlar olumsuz etkileri ifade eder.
 
-Şu başlıklar altında analiz yap:
-1. Genel Performans Değerlendirmesi
-2. Güçlü Yönler
-3. Geliştirilmesi Gereken Alanlar
-4. Karar Trendleri ve Tutarlılık
-5. Tavsiyeler
+Bu kararlara ve BAO skorlarına dayanarak oyuncunun otel yönetim performansını analiz et. Analizinde BAO skorlarını dikkate alarak kararların etkisini değerlendir.
 
-Özellikle dikkat edilmesi gereken hususlar:
-- Hangi kararlarda daha iyi seçimler yapılabilirdi?
-- Oyuncu hangi tür kararlarında daha başarılı?
-- Oyuncunun genel yönetim yaklaşımı nasıl?
-- Daha iyi bir otel yöneticisi olmak için spesifik tavsiyeler nelerdir?
+Şu başlıklar altında kısa ve öz analiz yap (maksimum 700 kelime):
+1. Genel Performans Özeti (Ortalama BAO skoru ve genel eğilim dahil)
+2. Öne Çıkan Başarılı Kararlar (Yüksek pozitif BAO skorlu kararlar)
+3. Geliştirilebilecek Kararlar/Alanlar (Düşük veya negatif BAO skorlu kararlar ve nedenleri)
+4. Genel Yönetim Yaklaşımı ve Tutarlılık (Kararların metrikler ve BAO skorları üzerindeki genel etkisi)
+5. 2-3 adet Anahtar Tavsiye (BAO skorlarını artırmaya yönelik öneriler)
 
-Analizin maksimum 700 kelime uzunluğunda olsun ve oyuncuya yararlı, yapıcı geri bildirimler içersin.
+Analizin yapıcı, anlaşılır ve oyuncuya yol gösterici olsun.
 
 İŞTE OYUNCUNUN KARARLARI:
+${analysisData}`;
 
-${analysisData}
-`;
-
-            // Mistral API isteği gönder
-            const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+            // Gemini API endpoint ve anahtarını kullan
+            // Gemini API endpoint ve anahtarını kullan
+            // Gemini API endpoint ve anahtarını kullan
+            const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent', { // Model adı güncellendi
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer x14dK9qhpwT46kS5yh8zCz1pS8KnpRhF'
+                    'x-goog-api-key': 'AIzaSyChYYGCr50OdWaDAAjh9laauPDt8gqZVTo' // Sağlanan Gemini API Anahtarı
                 },
                 body: JSON.stringify({
-                    model: "mistral-tiny", // mistral-tiny, mistral-small, mistral-medium
-                    messages: [
-                        {
-                            role: "user",
-                            content: prompt
-                        }
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 1024
+                    contents: [{
+                        parts: [{ text: prompt }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.6,
+                        maxOutputTokens: 1000
+                    }
                 })
             });
 
+            if (!response.ok) { // HTTP hata kontrolü
+                 const errorData = await response.json();
+                 console.error('Gemini API Hatası:', errorData);
+                 throw new Error(`API Hatası: ${response.status} - ${errorData.error?.message || 'Bilinmeyen hata'}`);
+            }
+
             const data = await response.json();
 
-            // API yanıtını kontrol et ve işle
-            if (data.choices && data.choices.length > 0 &&
-                data.choices[0].message &&
-                data.choices[0].message.content) {
-
-                const analysisText = data.choices[0].message.content;
-                setAiAnalysisResult(analysisText);
-                setShowAiAnalysis(true);
+            // Gemini yanıt formatına göre içeriği al
+            if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                setAiAnalysisResult(data.candidates[0].content.parts[0].text.trim());
+                setShowAiAnalysis(true); // Analiz başarılıysa modal'ı göster
             } else {
-                console.error('API yanıtı:', data);
-                throw new Error('API yanıtı beklenen formatta değil');
+                console.error('API yanıt formatı beklenmiyor:', data);
+                throw new Error('Yapay zeka yanıtı alınamadı veya format hatalı.');
             }
         } catch (error) {
             console.error('Yapay zeka analizi sırasında hata:', error);
-            setAiAnalysisResult('Analiz yapılırken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
-            setShowAiAnalysis(true);
+            setAiAnalysisResult(`Analiz yapılırken bir hata oluştu: ${error instanceof Error ? error.message : String(error)}`);
+            setShowAiAnalysis(true); // Hata olsa bile modal'ı gösterip hatayı belirt
         } finally {
             setIsAnalyzing(false);
         }
     };
 
+    // Veri çekme işlemini useEffect içine taşı
     useEffect(() => {
         const fetchData = async () => {
             if (!auth.currentUser) {
-                navigate('/');
+                console.log("Kullanıcı girişi yok, yönlendiriliyor.");
+                navigate('/'); // Kullanıcı yoksa ana sayfaya yönlendir
                 return;
             }
             setLoading(true);
+            setError(null); // Başlangıçta hatayı temizle
+
+            // gameId'nin geçerli olduğundan emin ol (URL'den veya state'den)
+            const currentValidGameId = gameId; // State'deki değeri kullan
+            if (!currentValidGameId) {
+                setError('Geçerli bir oyun ID bulunamadı.');
+                setLoading(false);
+                setReportText('Rapor oluşturulamadı: Oyun ID eksik.'); // Rapor metnini güncelle
+                return; // gameId yoksa işlemi durdur
+            }
 
             try {
                 const userId = auth.currentUser.uid;
 
-                // 1. Oyun ID'sini kontrol et
-                let currentGameId = gameId;
-                if (!currentGameId) {
-                    // Eğer URL'den alınamadıysa, localStorage'dan al
-                    currentGameId = localStorage.getItem('currentGameId');
+                // 1. Kullanıcı verilerini çek
+                const fetchedUserData = await getUserData(userId);
+                if (!fetchedUserData) {
+                    throw new Error("Kullanıcı verileri bulunamadı.");
                 }
+                setUserData(fetchedUserData); // Kullanıcı verisini state'e ata
+                const metrics = fetchedUserData.metrics;
 
-                if (!currentGameId) {
-                    throw new Error('Oyun ID bulunamadı');
-                }
+                // 2. Karar geçmişini çek (userId VE gameId ile)
+                // *** BURASI GÜNCELLENDİ: İki argüman gönderiliyor ***
+                const decisions = await loadUserDecisions(userId, currentValidGameId);
+                setUserDecisions(decisions); // Kararları state'e ata
 
-                // 2. Kullanıcı verilerini çek
-                const userData = await getUserData(userId);
-                const metrics = userData?.metrics;
-
-                // 3. Karar geçmişini çek
-                const userDecisions = await loadUserDecisions(userId);
-
-                // Eğer gameId varsa, sadece o oyuna ait kararları filtrele
-                const filteredDecisions = currentGameId
-                    ? userDecisions.filter(d => d.gameId === currentGameId)
-                    : userDecisions;
-
-                // Yapay zeka analizi için kararları sakla
-                setAllDecisions(filteredDecisions);
-
-                // 4. Kararları günlere göre grupla
-                const grouped = groupDecisionsByDay(filteredDecisions);
-
-                // 5. Detaylı rapor oluştur
+                // 3. Kararları grupla ve rapor oluştur
+                const grouped = groupDecisionsByDay(decisions);
                 const detailedReport = generateDetailedReport(grouped, metrics);
                 setReportText(detailedReport);
 
             } catch (error) {
                 console.error('Oyun bitiş verileri çekilirken hata oluştu:', error);
-                setReportText('Rapor oluşturulurken bir hata oluştu: ' + (error as Error).message);
+                const errorMessage = error instanceof Error ? error.message : "Bilinmeyen bir hata oluştu.";
+                setError(`Rapor oluşturulurken bir hata oluştu: ${errorMessage}`);
+                setReportText(`Rapor oluşturulamadı: ${errorMessage}`); // Rapor metnini güncelle
             } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, [navigate, gameId]);
+        // Bağımlılıkları doğru ayarlayın
+    }, [navigate, gameId, generateDetailedReport]); // gameId ve generateDetailedReport eklendi
 
     // Başka bir oyuna başla
     const startNewGame = () => {
-        // Mevcut oyun ID'sini temizle
-        localStorage.removeItem('currentGameId');
-        // Oyuncu kaldığı yere geri dönsün - genellikle setup sayfasına
+        localStorage.removeItem('currentGameId'); // Sadece oyun ID'sini temizle
         navigate('/game-setup');
     };
 
@@ -303,244 +285,252 @@ ${analysisData}
         setShowAiAnalysis(false);
     };
 
+    // Yükleme durumu
     if (loading) {
         return (
-            <div
-                style={{
-                    minHeight: '100vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: '#f5f7fa',
-                }}
-            >
-                <h2 style={{ color: '#1e3c72', marginBottom: '20px' }}>Oyun Bitti</h2>
-                <p style={{ color: '#666', fontSize: '1.1em' }}>
-                    Rapor hazırlanıyor, lütfen bekleyin...
-                </p>
+            <div style={styles.container}>
+                <h2 style={styles.title}>Oyun Bitti</h2>
+                 <div style={styles.loadingContainer}>
+                     <div style={styles.spinner}></div>
+                     <p style={styles.loadingText}>Rapor hazırlanıyor...</p>
+                 </div>
+                 <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
             </div>
         );
     }
 
-    return (
-        <div
-            style={{
-                minHeight: '100vh',
-                background: '#f5f7fa',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: '40px',
-            }}
-        >
-            <h2 style={{ color: '#1e3c72', marginBottom: '20px' }}>Oyun Bitti</h2>
+    // Hata durumu
+    if (error) {
+        return (
+            <div style={styles.container}>
+                <h2 style={{ ...styles.title, color: '#dc3545' }}>Hata</h2>
+                <div style={{ ...styles.reportContainer, textAlign: 'center', borderColor: '#dc3545' }}>
+                    <p style={{ color: '#dc3545', marginBottom: '20px' }}>{error}</p>
+                    <button onClick={() => window.location.reload()} style={{...styles.button, background: '#6c757d'}}>
+                        Sayfayı Yenile
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
-            <p style={{ color: '#666', fontSize: '1.1em', marginBottom: '30px' }}>
-                10 turu başarıyla tamamladınız! Detaylı raporunuz aşağıdadır:
+    // Başarılı render
+    return (
+        <div style={styles.container}>
+            <h2 style={styles.title}>Oyun Bitti!</h2>
+            <p style={styles.subtitle}>
+                10 turu başarıyla tamamladınız. Detaylı raporunuz:
             </p>
 
-            <div
-                style={{
-                    backgroundColor: 'white',
-                    padding: '20px',
-                    borderRadius: '8px',
-                    maxWidth: '800px',
-                    width: '100%',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    marginBottom: '20px',
-                    maxHeight: '70vh',
-                    overflowY: 'auto',
-                }}
-            >
-                <pre style={{
-                    whiteSpace: 'pre-wrap',
-                    fontFamily: 'inherit',
-                    fontSize: '0.95em',
-                    lineHeight: '1.5'
-                }}>
+            {/* Rapor Alanı */}
+            <div style={styles.reportContainer}>
+                <pre style={styles.preformattedText}>
                     {reportText}
                 </pre>
             </div>
 
-            <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-                <button
-                    onClick={() => {
-                        const blob = new Blob([reportText], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'otel_yonetimi_raporu.txt';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                    }}
-                    style={{
-                        padding: '10px 20px',
-                        background: '#4caf50',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                    }}
-                >
+            {/* Butonlar */}
+            <div style={styles.buttonGroup}>
+                <button onClick={() => { /* Rapor İndirme */
+                    const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' }); // UTF-8 eklendi
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `OtelSim_Rapor_${gameId || 'oyun'}.txt`; // Dinamik dosya adı
+                    a.click();
+                    URL.revokeObjectURL(url); // Belleği serbest bırak
+                }} style={{ ...styles.button, background: '#4caf50' }}>
                     Raporu İndir
                 </button>
 
-                <button
-                    onClick={analyzeGameWithAI}
-                    disabled={isAnalyzing}
-                    style={{
-                        padding: '10px 20px',
-                        background: '#9c27b0',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: isAnalyzing ? 'not-allowed' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                    }}
-                >
-                    {isAnalyzing ? (
-                        <>
-                            <span style={{
-                                display: 'inline-block',
-                                width: '16px',
-                                height: '16px',
-                                border: '3px solid rgba(255,255,255,0.3)',
-                                borderRadius: '50%',
-                                borderTopColor: 'white',
-                                animation: 'spin 1s linear infinite'
-                            }}></span>
-                            Analiz Yapılıyor...
-                        </>
-                    ) : '🧠 Yapay Zeka Analizi'}
+                <button onClick={analyzeGameWithAI} disabled={isAnalyzing || userDecisions.length === 0} style={{ ...styles.button, background: '#9c27b0', cursor: (isAnalyzing || userDecisions.length === 0) ? 'not-allowed' : 'pointer', opacity: (isAnalyzing || userDecisions.length === 0) ? 0.6 : 1 }}>
+                    {isAnalyzing ? <><div style={styles.buttonSpinner}></div> Analiz Yapılıyor...</> : '🧠 Yapay Zeka Analizi'}
                 </button>
 
-                <button
-                    onClick={startNewGame}
-                    style={{
-                        padding: '10px 20px',
-                        background: '#2196f3',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                    }}
-                >
+                <button onClick={startNewGame} style={{ ...styles.button, background: '#2196f3' }}>
                     Yeni Oyun Başlat
                 </button>
 
-                <button
-                    onClick={() => navigate('/')}
-                    style={{
-                        padding: '10px 20px',
-                        background: '#1e3c72',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                    }}
-                >
-                    Ana Menüye Dön
+                <button onClick={() => navigate('/')} style={{ ...styles.button, background: '#1e3c72' }}>
+                    Ana Menü
                 </button>
             </div>
 
             {/* Yapay Zeka Analiz Sonucu Modalı */}
             {showAiAnalysis && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100vw',
-                    height: '100vh',
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 9999
-                }}>
-                    <div style={{
-                        background: 'white',
-                        borderRadius: '12px',
-                        padding: '30px',
-                        maxWidth: '800px',
-                        width: '90%',
-                        maxHeight: '80vh',
-                        overflowY: 'auto',
-                        position: 'relative'
-                    }}>
-                        <button
-                            onClick={closeAnalysis}
-                            style={{
-                                position: 'absolute',
-                                top: '10px',
-                                right: '10px',
-                                background: 'transparent',
-                                border: 'none',
-                                fontSize: '20px',
-                                cursor: 'pointer',
-                                color: '#666'
-                            }}
-                        >
-                            ✕
-                        </button>
-
-                        <h2 style={{ color: '#9c27b0', marginBottom: '20px', textAlign: 'center' }}>
-                            🧠 Yapay Zeka Performans Analizi
-                        </h2>
-
-                        <div style={{
-                            fontSize: '1em',
-                            lineHeight: '1.6',
-                            color: '#333',
-                            whiteSpace: 'pre-wrap'
-                        }}>
-                            {aiAnalysisResult}
+                <div style={styles.modalOverlay}>
+                    <div style={styles.modalContent}>
+                        <button onClick={closeAnalysis} style={styles.modalCloseButton}>✕</button>
+                        <h2 style={styles.modalTitle}>🧠 Yapay Zeka Performans Analizi</h2>
+                        <div style={styles.modalText}>
+                            {aiAnalysisResult || "Analiz sonucu yükleniyor..."}
                         </div>
-
                         <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                            <button
-                                onClick={() => {
-                                    if (aiAnalysisResult) {
-                                        const blob = new Blob([aiAnalysisResult], { type: 'text/plain' });
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = 'otel_yonetimi_ai_analizi.txt';
-                                        document.body.appendChild(a);
-                                        a.click();
-                                        document.body.removeChild(a);
-                                    }
-                                }}
-                                style={{
-                                    padding: '10px 20px',
-                                    background: '#9c27b0',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                }}
-                            >
+                            <button onClick={() => { /* Analiz İndirme */
+                                if (aiAnalysisResult) {
+                                    const blob = new Blob([aiAnalysisResult], { type: 'text/plain;charset=utf-8' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `OtelSim_AI_Analiz_${gameId || 'oyun'}.txt`;
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                }
+                            }} style={{ ...styles.button, background: '#9c27b0' }} disabled={!aiAnalysisResult}>
                                 Analizi İndir
                             </button>
                         </div>
                     </div>
                 </div>
             )}
-
-            {/* CSS Animation for Spinner */}
-            <style>
-                {`
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-                `}
-            </style>
+             <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
         </div>
     );
+};
+
+// Stil tanımlamaları (Daha okunabilir olması için dışarı alındı)
+const styles: { [key: string]: React.CSSProperties } = {
+    container: {
+        minHeight: '100vh',
+        background: '#f0f2f5',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: '40px 20px', // Increased top/bottom padding
+        boxSizing: 'border-box',
+    },
+    title: {
+        color: '#1e3c72',
+        marginBottom: '10px', // Reduced margin
+        fontSize: '2em', // Slightly larger title
+        textAlign: 'center',
+    },
+    subtitle: {
+        color: '#555',
+        fontSize: '1.1em', // Slightly larger subtitle
+        marginBottom: '30px', // Increased margin
+        textAlign: 'center',
+    },
+    loadingContainer: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: '30px', // Increased margin
+    },
+    spinner: {
+        display: 'inline-block',
+        width: '30px', // Slightly larger spinner
+        height: '30px',
+        border: '4px solid rgba(0,0,0,0.1)', // Thicker border
+        borderRadius: '50%',
+        borderTopColor: '#1e3c72',
+        animation: 'spin 1s linear infinite',
+        marginRight: '15px', // Increased margin
+    },
+     buttonSpinner: {
+        display: 'inline-block',
+        width: '18px', // Slightly larger
+        height: '18px',
+        border: '3px solid rgba(255,255,255,0.3)',
+        borderRadius: '50%',
+        borderTopColor: 'white',
+        animation: 'spin 1s linear infinite',
+        marginRight: '10px', // Increased margin
+     },
+    loadingText: {
+        color: '#666',
+        fontSize: '1.2em', // Slightly larger text
+    },
+    reportContainer: {
+        backgroundColor: 'white',
+        padding: '30px', // Increased padding
+        borderRadius: '10px',
+        maxWidth: '900px', // Increased max width
+        width: '100%',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)', // More prominent shadow
+        marginBottom: '30px', // Increased margin
+        maxHeight: '70vh', // Increased max height
+        overflowY: 'auto',
+        border: '1px solid #e0e0e0',
+    },
+    preformattedText: {
+        whiteSpace: 'pre-wrap',
+        wordWrap: 'break-word',
+        fontFamily: 'Consolas, "Courier New", monospace',
+        fontSize: '1em', // Slightly larger font
+        lineHeight: '1.7', // Increased line height
+        color: '#333',
+    },
+    buttonGroup: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: '20px', // Increased gap between buttons
+        marginBottom: '30px', // Increased margin
+    },
+    button: {
+        padding: '12px 25px', // Increased padding
+        color: '#fff',
+        border: 'none',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        fontSize: '1em', // Slightly larger font
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '10px', // Increased gap
+        transition: 'background-color 0.2s ease, opacity 0.2s ease',
+    },
+    modalOverlay: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: 'rgba(0, 0, 0, 0.75)', // Darker overlay
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+        padding: '20px',
+        boxSizing: 'border-box',
+    },
+    modalContent: {
+        background: 'white',
+        borderRadius: '10px',
+        padding: '30px 35px', // Increased padding
+        maxWidth: '800px', // Increased max width
+        width: '100%',
+        maxHeight: '90vh', // Increased max height
+        overflowY: 'auto',
+        position: 'relative',
+        boxShadow: '0 5px 25px rgba(0,0,0,0.3)', // More prominent shadow
+    },
+    modalCloseButton: {
+        position: 'absolute',
+        top: '15px', // Adjusted position
+        right: '20px', // Adjusted position
+        background: 'transparent',
+        border: 'none',
+        fontSize: '28px', // Larger close button
+        cursor: 'pointer',
+        color: '#666', // Darker color
+        padding: '5px',
+        lineHeight: '1',
+    },
+    modalTitle: {
+        color: '#9c27b0',
+        marginBottom: '25px', // Increased margin
+        textAlign: 'center',
+        fontSize: '1.6em', // Larger title
+    },
+    modalText: {
+        fontSize: '1em', // Slightly larger font
+        lineHeight: '1.8', // Increased line height
+        color: '#333',
+        whiteSpace: 'pre-wrap', // AI yanıtındaki formatlamayı koru
+        wordWrap: 'break-word',
+    }
 };
 
 export default GameOver;
