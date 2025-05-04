@@ -81,11 +81,19 @@ ${Object.keys(groupedDecisions).length > 0 ? '10 TUR BOYUNCA KARARLARINIZ:' : 'O
                     report += `Seçiminiz: `;
                     report += decision.selectedOptionText ? `"${decision.selectedOptionText}"\n` : `(Opsiyon #${decision.selectedOption + 1})\n`;
 
-                     // --- BAO Skoru ekle ---
-                     if (typeof decision.baoScore === 'number') {
-                        report += `Genel Etki Skoru (BAO): ${decision.baoScore.toFixed(1)}\n`;
+                     // --- MCDA Skorlarını ekle ---
+                     const scores: string[] = [];
+                     if (typeof decision.baoScore === 'number') scores.push(`BAO: ${decision.baoScore.toFixed(1)}`);
+                     if (typeof decision.topsisScore === 'number') scores.push(`TOPSIS: ${decision.topsisScore.toFixed(1)}`);
+                     if (typeof decision.ahpScore === 'number') scores.push(`AHP: ${decision.ahpScore.toFixed(1)}`);
+                     if (typeof decision.electreScore === 'number') scores.push(`ELECTRE: ${decision.electreScore.toFixed(1)}`);
+                     if (typeof decision.mavtScore === 'number') scores.push(`MAVT: ${decision.mavtScore.toFixed(1)}`);
+                     if (typeof decision.vikorSScore === 'number' && typeof decision.vikorRScore === 'number') scores.push(`VIKOR(S/R): ${decision.vikorSScore.toFixed(1)}/${decision.vikorRScore.toFixed(1)}`);
+
+                     if (scores.length > 0) {
+                         report += `Hesaplanan Skorlar: ${scores.join(' | ')}\n`;
                      }
-                     // ----------------------
+                     // --------------------------
 
 
                     // Etki bilgilerini ekle
@@ -133,11 +141,19 @@ ${Object.keys(groupedDecisions).length > 0 ? '10 TUR BOYUNCA KARARLARINIZ:' : 'O
                     analysisData += `### Senaryo ${index + 1}\n`;
                     analysisData += `**Durum:** ${decision.scenarioText || '(Metin Yok)'}\n`;
                     analysisData += `**Oyuncunun Seçimi:** ${decision.selectedOptionText || `(Opsiyon #${decision.selectedOption + 1})`}\n`;
-                     // --- BAO Skoru ekle ---
-                     if (typeof decision.baoScore === 'number') {
-                         analysisData += `**Hesaplanan Etki Skoru:** ${decision.baoScore.toFixed(1)}\n`;
+                     // --- MCDA Skorlarını ekle ---
+                     const scoreEntries: string[] = [];
+                     if (typeof decision.baoScore === 'number') scoreEntries.push(`BAO: ${decision.baoScore.toFixed(1)}`);
+                     if (typeof decision.topsisScore === 'number') scoreEntries.push(`TOPSIS: ${decision.topsisScore.toFixed(1)}`);
+                     if (typeof decision.ahpScore === 'number') scoreEntries.push(`AHP: ${decision.ahpScore.toFixed(1)}`);
+                     if (typeof decision.electreScore === 'number') scoreEntries.push(`ELECTRE: ${decision.electreScore.toFixed(1)}`);
+                     if (typeof decision.mavtScore === 'number') scoreEntries.push(`MAVT: ${decision.mavtScore.toFixed(1)}`);
+                     if (typeof decision.vikorSScore === 'number' && typeof decision.vikorRScore === 'number') scoreEntries.push(`VIKOR(S/R): ${decision.vikorSScore.toFixed(1)}/${decision.vikorRScore.toFixed(1)}`);
+
+                     if (scoreEntries.length > 0) {
+                         analysisData += `**Hesaplanan Skorlar:** ${scoreEntries.join(' | ')}\n`;
                      }
-                     // ----------------------
+                     // --------------------------
                     analysisData += `---\n\n`;
                 });
             });
@@ -155,24 +171,30 @@ ${Object.keys(groupedDecisions).length > 0 ? '10 TUR BOYUNCA KARARLARINIZ:' : 'O
         setAiAnalysisResult(null); // Önceki sonucu temizle
         setShowAiAnalysis(false); // Modal'ı gizle
 
-        try {
-            const analysisData = generateAIAnalysisData(userDecisions); // userDecisions state'ini kullan
-            const prompt = `
-Sen bir otel yönetim uzmanısın. Aşağıda bir otel yönetim simülasyonu oyununun karar özeti verilmiştir. Her kararın bir "Hesaplanan Etki Skoru (BAO)" bulunmaktadır. Bu skor, kararın otel metrikleri üzerindeki ağırlıklı ortalama etkisini gösterir. Yüksek pozitif skorlar olumlu, yüksek negatif skorlar olumsuz etkileri ifade eder.
+         try {
+             const analysisData = generateAIAnalysisData(userDecisions); // userDecisions state'ini kullan
+             const prompt = `
+ Sen bir otel yönetim uzmanısın. Aşağıda bir otel yönetim simülasyonu oyununun karar özeti verilmiştir. Her kararın yanında çeşitli Çok Kriterli Karar Verme (MCDA) yöntemlerine dayalı hesaplanmış skorlar bulunmaktadır:
+ - BAO/SAW: Basit ağırlıklı ortalama etki. Yüksek pozitif = iyi.
+ - TOPSIS: İdeal çözüme yakınlık oranı (net fayda). Yüksek pozitif = iyi.
+ - AHP Proxy: Etkilerin ağırlıklara göre uyumu. Yüksek pozitif = iyi.
+ - ELECTRE Proxy: Uyum (iyi etki) - Uyumsuzluk (kötü etki) dengesi. Yüksek pozitif = iyi.
+ - MAVT Proxy: Negatif etkileri daha çok cezalandıran değer teorisi. Yüksek pozitif = iyi.
+ - VIKOR (S/R): Pişmanlık skorları (toplam/maksimum). Düşük = iyi.
 
-Bu kararlara ve BAO skorlarına dayanarak oyuncunun otel yönetim performansını analiz et. Analizinde BAO skorlarını dikkate alarak kararların etkisini değerlendir.
+ Bu kararlara ve TÜM MCDA skorlarına dayanarak oyuncunun otel yönetim performansını kapsamlı bir şekilde analiz et. Farklı skorların ne anlama geldiğini göz önünde bulundurarak kararların güçlü ve zayıf yönlerini değerlendir.
 
-Şu başlıklar altında kısa ve öz analiz yap (maksimum 700 kelime):
-1. Genel Performans Özeti (Ortalama BAO skoru ve genel eğilim dahil)
-2. Öne Çıkan Başarılı Kararlar (Yüksek pozitif BAO skorlu kararlar)
-3. Geliştirilebilecek Kararlar/Alanlar (Düşük veya negatif BAO skorlu kararlar ve nedenleri)
-4. Genel Yönetim Yaklaşımı ve Tutarlılık (Kararların metrikler ve BAO skorları üzerindeki genel etkisi)
-5. 2-3 adet Anahtar Tavsiye (BAO skorlarını artırmaya yönelik öneriler)
+ Şu başlıklar altında kısa ve öz analiz yap (maksimum 700 kelime):
+ 1. Genel Performans Özeti (Ortalama skorlar ve genel eğilimler dahil)
+ 2. Öne Çıkan Başarılı Kararlar (Farklı skor türlerine göre başarılı olan kararlar ve nedenleri)
+ 3. Geliştirilebilecek Kararlar/Alanlar (Farklı skor türlerine göre zayıf kalan kararlar ve nedenleri, özellikle VIKOR skorları yüksek olanlar)
+ 4. Genel Yönetim Yaklaşımı ve Tutarlılık (Kararların farklı metrikler ve skorlar üzerindeki genel etkisi, risk alma/kaçınma eğilimi)
+ 5. 2-3 adet Anahtar Tavsiye (Farklı MCDA skorlarını iyileştirmeye yönelik spesifik öneriler)
 
-Analizin yapıcı, anlaşılır ve oyuncuya yol gösterici olsun.
+ Analizin yapıcı, anlaşılır ve oyuncuya yol gösterici olsun. Skorların farklı bakış açıları sunduğunu vurgula.
 
-İŞTE OYUNCUNUN KARARLARI:
-${analysisData}`;
+ İŞTE OYUNCUNUN KARARLARI VE SKORLARI:
+ ${analysisData}`;
 
             // Gemini API endpoint ve anahtarını kullan
             // Gemini API endpoint ve anahtarını kullan
@@ -186,12 +208,12 @@ ${analysisData}`;
                 body: JSON.stringify({
                     contents: [{
                         parts: [{ text: prompt }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.6,
-                        maxOutputTokens: 1000
-                    }
-                })
+                     }],
+                     generationConfig: {
+                         temperature: 0.6,
+                         maxOutputTokens: 2048 // Increased token limit
+                     }
+                 })
             });
 
             if (!response.ok) { // HTTP hata kontrolü

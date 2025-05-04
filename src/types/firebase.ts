@@ -11,7 +11,8 @@ export interface MetricValues {
 }
 
 export interface UserData {
-    lastLoginDate: Timestamp; // Bu ve aşağıdaki timestamp biraz gereksiz görünüyor, biri yeterli olabilir
+    // Muhtemelen bunlardan birini silebilirsiniz, örneğin lastLoginTimestamp'ı
+    lastLoginDate: Timestamp;
     email: string;
     name: string;
     currentRole: string;
@@ -20,7 +21,7 @@ export interface UserData {
     completedScenarios: number;
     metrics: MetricValues;
     achievements: string[];
-    lastLoginTimestamp: Timestamp; // Bu alan muhtemelen lastLoginDate ile aynı, gereksiz olabilir
+    // lastLoginTimestamp: Timestamp; // Bunu silebilirsiniz
     createdAt: Timestamp;
 }
 
@@ -49,7 +50,13 @@ export interface UserDecision {
     scenarioText?: string;
     selectedOptionText?: string;
     gameId?: string;
-    // --- BU SATIRI EKLEYİN ---
-    baoScore?: number; // BAO skoru için isteğe bağlı sayı alanı
-    // --------------------------
+    // --- MCDA Scores (Kodun kullandığı isimlere eşleşmeli) ---
+    baoScore?: number; // BAO skoru
+    sawScore?: number; // SAW skoru
+    topsisScore?: number; // TOPSIS skoru
+    vikorSScore?: number; // VIKOR S skoru (Kod bunu kullanıyor)
+    vikorRScore?: number; // VIKOR R skoru (Kod bunu kullanıyor)
+    ahpScore?: number; // Yeni eklenenler
+    electreScore?: number;
+    mavtScore?: number;
 }

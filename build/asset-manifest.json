@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/otelsim/static/css/main.ecc0791e.css",
+    "main.js": "/otelsim/static/js/main.bc416ba9.js",
+    "index.html": "/otelsim/index.html",
+    "main.ecc0791e.css.map": "/otelsim/static/css/main.ecc0791e.css.map",
+    "main.bc416ba9.js.map": "/otelsim/static/js/main.bc416ba9.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.ecc0791e.css",
+    "static/js/main.bc416ba9.js"
+  ]
+}

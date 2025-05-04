@@ -34,7 +34,7 @@ const MetricsManager = () => {
     ];
 
     const metricLabels = {
-        revenue: 'Gelir (x1000₺)',
+        revenue: 'Gelir (x100₺)',
         customerSatisfaction: 'Müşteri Memnuniyeti (%)',
         staffSatisfaction: 'Personel Memnuniyeti (%)',
         occupancyRate: 'Doluluk Oranı (%)',
