@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/otelsim/static/css/main.ecc0791e.css",
-    "main.js": "/otelsim/static/js/main.bc416ba9.js",
+    "main.js": "/otelsim/static/js/main.16dd46bf.js",
     "index.html": "/otelsim/index.html",
     "main.ecc0791e.css.map": "/otelsim/static/css/main.ecc0791e.css.map",
-    "main.bc416ba9.js.map": "/otelsim/static/js/main.bc416ba9.js.map"
+    "main.16dd46bf.js.map": "/otelsim/static/js/main.16dd46bf.js.map"
   },
   "entrypoints": [
     "static/css/main.ecc0791e.css",
-    "static/js/main.bc416ba9.js"
+    "static/js/main.16dd46bf.js"
   ]
 }
