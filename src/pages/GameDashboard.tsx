@@ -39,7 +39,6 @@ interface CurrentScenario {
     options: ScenarioOption[];
 }
 
-// --- BAO Score Integration START ---
 const metricWeights: { [key in keyof MetricValues]: number } = {
     revenue: 0.25,
     customerSatisfaction: 0.25,
